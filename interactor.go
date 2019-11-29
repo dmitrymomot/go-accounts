@@ -16,8 +16,7 @@ type (
 	// AccountRepository interface
 	AccountRepository interface {
 		GetByID(id string) (*Account, error)
-		GetList(limit, offset int, order AccountOrder) ([]*Account, error)
-		GetListByIDs(ids []string) ([]*Account, error)
+		GetList(c ...Condition) ([]*Account, error)
 		Insert(a *Account) error
 		Update(a *Account) error
 		Delete(id string) error
@@ -27,8 +26,7 @@ type (
 	MemberRepository interface {
 		GetByID(id string) (*Member, error)
 		HasRole(aid, uid, role string) error
-		GetListByAccountID(aid string, limit, offset int, order MemberOrder) ([]*Member, error)
-		GetListByUserID(uid string, limit, offset int, order MemberOrder) ([]*Member, error)
+		GetList(c ...Condition) ([]*Member, error)
 		Insert(m *Member) error
 		Update(m *Member) error
 		Delete(id string) error
@@ -57,8 +55,8 @@ func (i *Interactor) GetByID(id string) (*Account, error) {
 }
 
 // GetList of accounts
-func (i *Interactor) GetList(limit, offset int, order AccountOrder) ([]*Account, error) {
-	return i.accRepo.GetList(limit, offset, order)
+func (i *Interactor) GetList(c ...Condition) ([]*Account, error) {
+	return i.accRepo.GetList(c...)
 }
 
 // Insert a new account and add user as owner
@@ -66,8 +64,8 @@ func (i *Interactor) Insert(a *Account, uid string) error {
 	if a.ID == "" {
 		a.ID = uuid.New().String()
 	}
-	if a.CreatedAt.IsZero() {
-		a.CreatedAt = time.Now()
+	if a.CreatedAt == 0 {
+		a.CreatedAt = time.Now().Unix()
 	}
 	if a.Name == "" {
 		return ErrNameMissed
@@ -82,7 +80,8 @@ func (i *Interactor) Insert(a *Account, uid string) error {
 		ID:        uuid.New().String(),
 		AccountID: a.ID,
 		UserID:    uid,
-		CreatedAt: time.Now(),
+		Role:      RoleOwner,
+		CreatedAt: time.Now().Unix(),
 	}); err != nil {
 		i.accRepo.Delete(a.ID)
 		return err
@@ -96,7 +95,7 @@ func (i *Interactor) Update(a *Account) error {
 		return ErrNotExistedAccount
 	}
 	if a.UpdatedAt == nil {
-		t := time.Now()
+		t := time.Now().Unix()
 		a.UpdatedAt = &t
 	}
 	if a.Name == "" {
@@ -123,7 +122,7 @@ func (i *Interactor) AddMember(aid, uid, role string) error {
 		AccountID: aid,
 		UserID:    uid,
 		Role:      role,
-		CreatedAt: time.Now(),
+		CreatedAt: time.Now().Unix(),
 	})
 }
 
@@ -142,9 +141,9 @@ func (i *Interactor) DeleteMembersByUserID(uid string) error {
 	return i.membRepo.DeleteByUserID(uid)
 }
 
-// GetMembersListByAccountID returns an account members list
-func (i *Interactor) GetMembersListByAccountID(aid string, limit, offset int, order MemberOrder) ([]*Member, error) {
-	ml, err := i.membRepo.GetListByAccountID(aid, limit, offset, order)
+// GetMembersList returns members list
+func (i *Interactor) GetMembersList(c ...Condition) ([]*Member, error) {
+	ml, err := i.membRepo.GetList(c...)
 	if err != nil {
 		return nil, err
 	}
@@ -152,12 +151,17 @@ func (i *Interactor) GetMembersListByAccountID(aid string, limit, offset int, or
 }
 
 // GetAccountsListByUserID returns accounts list by user id
-func (i *Interactor) GetAccountsListByUserID(uid string, limit, offset int, order MemberOrder) ([]*Account, error) {
-	ml, err := i.membRepo.GetListByUserID(uid, limit, offset, order)
+func (i *Interactor) GetAccountsListByUserID(uid string, c ...Condition) ([]*Account, error) {
+	if len(c) > 0 {
+		c = append(c, UserID(uid))
+	} else {
+		c = []Condition{UserID(uid)}
+	}
+	ml, err := i.membRepo.GetList(c...)
 	if err != nil {
 		return nil, err
 	}
-	al, err := i.accRepo.GetListByIDs(i.GetAccountsIDs(ml))
+	al, err := i.accRepo.GetList(IDs(i.getAccountsIDs(ml)))
 	if err != nil {
 		return nil, err
 	}
@@ -165,12 +169,17 @@ func (i *Interactor) GetAccountsListByUserID(uid string, limit, offset int, orde
 }
 
 // GetAccountsListWithRoleByUserID returns accounts list with roles by user id
-func (i *Interactor) GetAccountsListWithRoleByUserID(uid string, limit, offset int, order MemberOrder) ([]*AccountWithRole, error) {
-	ml, err := i.membRepo.GetListByUserID(uid, limit, offset, order)
+func (i *Interactor) GetAccountsListWithRoleByUserID(uid string, c ...Condition) ([]*AccountWithRole, error) {
+	if len(c) > 0 {
+		c = append(c, UserID(uid))
+	} else {
+		c = []Condition{UserID(uid)}
+	}
+	ml, err := i.membRepo.GetList(c...)
 	if err != nil {
 		return nil, err
 	}
-	al, err := i.accRepo.GetListByIDs(i.GetAccountsIDs(ml))
+	al, err := i.accRepo.GetList(IDs(i.getAccountsIDs(ml)))
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +201,7 @@ func (i *Interactor) GetAccountsListWithRoleByUserID(uid string, limit, offset i
 }
 
 // GetUsersIDs returns slice of users ids by members list
-func (i *Interactor) GetUsersIDs(ml []*Member) []string {
+func (i *Interactor) getUsersIDs(ml []*Member) []string {
 	ids := make([]string, 0, len(ml))
 	for _, m := range ml {
 		ids = append(ids, m.UserID)
@@ -201,10 +210,10 @@ func (i *Interactor) GetUsersIDs(ml []*Member) []string {
 }
 
 // GetAccountsIDs returns slice of accounts ids by members list
-func (i *Interactor) GetAccountsIDs(ml []*Member) []string {
+func (i *Interactor) getAccountsIDs(ml []*Member) []string {
 	ids := make([]string, 0, len(ml))
 	for _, m := range ml {
-		ids = append(ids, m.UserID)
+		ids = append(ids, m.AccountID)
 	}
 	return ids
 }

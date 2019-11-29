@@ -1,14 +1,12 @@
 package accounts
 
-import "time"
-
 type (
 	// Account model structure
 	Account struct {
-		ID        string     `json:"id"`
-		Name      string     `json:"name"`
-		Disabled  bool       `json:"disabled"`
-		CreatedAt time.Time  `json:"created_at"`
-		UpdatedAt *time.Time `json:"updated_at,omitempty,"`
+		ID        string `db:"id" json:"id"`
+		Name      string `db:"name" json:"name"`
+		Disabled  bool   `db:"disabled" json:"disabled"`
+		CreatedAt int64  `db:"created_at" json:"created_at"`
+		UpdatedAt *int64 `db:"updated_at" json:"updated_at,omitempty,"`
 	}
 )
