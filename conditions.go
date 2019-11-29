@@ -3,9 +3,8 @@ package accounts
 import (
 	"strings"
 
-	"github.com/jmoiron/sqlx"
-
 	"github.com/bradfitz/slice"
+	"github.com/jmoiron/sqlx"
 )
 
 // Predefined query section type
@@ -19,20 +18,20 @@ const (
 // Predefined users list ordering
 const (
 	// ORDER BY created_at ASC
-	CreatedAtAsc Order = iota + 1
+	OrderByCreatedAtAsc Order = iota + 1
 	// ORDER BY created_at DESC
-	CreatedAtDesc
+	OrderByCreatedAtDesc
 	// ORDER BY updated_at ASC
-	UpdatedAtAsc
+	OrderByUpdatedAtAsc
 	// ORDER BY updated_at DESC
-	UpdatedAtDesc
+	OrderByUpdatedAtDesc
 )
 
 var orderQueryMap = map[Order]string{
-	CreatedAtAsc:  "created_at ASC",
-	CreatedAtDesc: "created_at DESC",
-	UpdatedAtAsc:  "updated_at ASC",
-	UpdatedAtDesc: "updated_at DESC",
+	OrderByCreatedAtAsc:  "created_at ASC",
+	OrderByCreatedAtDesc: "created_at DESC",
+	OrderByUpdatedAtAsc:  "updated_at ASC",
+	OrderByUpdatedAtDesc: "updated_at DESC",
 }
 
 type (

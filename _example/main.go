@@ -56,7 +56,7 @@ func main() {
 	}
 
 	al, err := ai.GetAccountsListWithRoleByUserID(uid,
-		accounts.OrderBy(accounts.CreatedAtDesc),
+		accounts.OrderBy(accounts.OrderByCreatedAtDesc),
 		accounts.Limit(3),
 		accounts.Role(accounts.RoleOwner),
 	)
