@@ -121,12 +121,16 @@ func (r *MembRepository) DeleteByUserID(uid string) error {
 }
 
 // HasRole checks whether the member has the given role in the account or not
-func (r *MembRepository) HasRole(aid, uid, role string) error {
-	q := "SELECT * FROM %s WHERE account_id = ? AND user_id = ? AND role = ? LIMIT 1"
+func (r *MembRepository) HasRole(aid, uid string, role ...string) error {
+	q := "SELECT * FROM %s WHERE account_id = ? AND user_id = ? AND role IN (?) LIMIT 1"
 	q = fmt.Sprintf(q, r.tableName)
+	q, args, err := sqlx.In(q, aid, uid, role)
+	if err != nil {
+		return errors.Wrap(err, "bind roles")
+	}
 	q = r.db.Rebind(q)
 	m := &Member{}
-	if err := r.db.Get(m, q, aid, uid, role); err != nil {
+	if err := r.db.Get(m, q, args...); err != nil {
 		if err == sql.ErrNoRows {
 			return ErrNotFoundMember
 		}

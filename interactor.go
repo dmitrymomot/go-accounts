@@ -25,7 +25,7 @@ type (
 	// MemberRepository interface
 	MemberRepository interface {
 		GetByID(id string) (*Member, error)
-		HasRole(aid, uid, role string) error
+		HasRole(aid, uid string, role ...string) error
 		GetList(c ...Condition) ([]*Member, error)
 		Insert(m *Member) error
 		Update(m *Member) error
@@ -219,8 +219,8 @@ func (i *Interactor) getAccountsIDs(ml []*Member) []string {
 }
 
 // HasRole helper to check user role for account
-func (i *Interactor) HasRole(aid, uid, role string) bool {
-	if i.membRepo.HasRole(aid, uid, role) != nil {
+func (i *Interactor) HasRole(aid, uid string, role ...string) bool {
+	if i.membRepo.HasRole(aid, uid, role...) != nil {
 		return false
 	}
 	return true
