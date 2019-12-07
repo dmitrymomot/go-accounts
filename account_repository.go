@@ -17,8 +17,11 @@ type (
 )
 
 // NewAccountRepository factory
-func NewAccountRepository(db *sqlx.DB, tableName string) *AccRepository {
-	return &AccRepository{db: db, tableName: tableName}
+func NewAccountRepository(db *sql.DB, driverName, tableName string) *AccRepository {
+	return &AccRepository{
+		db:        sqlx.NewDb(db, driverName),
+		tableName: tableName,
+	}
 }
 
 // GetByID ...

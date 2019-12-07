@@ -1,13 +1,13 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"time"
 
 	accounts "github.com/dmitrymomot/go-accounts"
 	"github.com/dmitrymomot/random"
-	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3" // or another driver
 )
 
@@ -16,13 +16,13 @@ var (
 )
 
 func main() {
-	db, err := sqlx.Connect("sqlite3", "./test.db")
+	db, err := sql.Open("sqlite3", "./test.db")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	db.MustExec(`
+	db.Exec(`
 	CREATE TABLE IF NOT EXISTS accounts (
 		id TEXT PRIMARY KEY,
 		name TEXT NOT NULL,
@@ -41,8 +41,8 @@ func main() {
 	`)
 
 	ai := accounts.NewInteractor(
-		accounts.NewAccountRepository(db, "accounts"),
-		accounts.NewMemberRepository(db, "members"),
+		accounts.NewAccountRepository(db, "sqlite3", "accounts"),
+		accounts.NewMemberRepository(db, "sqlite3", "members"),
 	)
 
 	if err := ai.Insert(&accounts.Account{Name: "The App " + random.String(5)}, uid); err != nil {

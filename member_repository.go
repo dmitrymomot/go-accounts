@@ -17,8 +17,11 @@ type (
 )
 
 // NewMemberRepository factory
-func NewMemberRepository(db *sqlx.DB, tableName string) *MembRepository {
-	return &MembRepository{db: db, tableName: tableName}
+func NewMemberRepository(db *sql.DB, driverName, tableName string) *MembRepository {
+	return &MembRepository{
+		db:        sqlx.NewDb(db, driverName),
+		tableName: tableName,
+	}
 }
 
 // GetByID ...
